@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS medical_profiles (
+    user_id INTEGER PRIMARY KEY,
+    blood_group TEXT,
+    allergies TEXT,
+    emergency_contact TEXT
+);

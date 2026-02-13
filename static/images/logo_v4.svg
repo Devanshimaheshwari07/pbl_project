@@ -1,0 +1,25 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00c6ff;stop-opacity:1" /> <!-- Cyan -->
+      <stop offset="100%" style="stop-color:#0072ff;stop-opacity:1" /> <!-- Blue -->
+    </linearGradient>
+  </defs>
+  
+  <!-- Dynamic Pulse Line -->
+  <!-- Starts left, small bump, big spike, settles, ends in a dot -->
+  <path d="M10 50 L25 50 L35 30 L50 75 L65 40 L75 50 L90 50" 
+        fill="none" stroke="url(#grad3)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+        <animate attributeName="stroke-dasharray" from="0,200" to="200,0" dur="1.5s" fill="freeze" />
+  </path>
+  
+  <!-- "Location/Patient" Dot at end -->
+  <circle cx="90" cy="50" r="6" fill="#0072ff">
+    <animate attributeName="r" values="6;8;6" dur="1.5s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="1.5s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Echo Pulse (Faint) -->
+  <path d="M10 50 L25 50 L35 30 L50 75 L65 40 L75 50 L90 50" 
+        fill="none" stroke="#00c6ff" stroke-width="2" stroke-opacity="0.3" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, 5)"/>
+</svg>

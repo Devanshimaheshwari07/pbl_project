@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<section class="content-section">
+    <h2 style="text-align:center;">Welcome, {{ user.name }}</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <p style="text-align:center; color: {% if category == 'danger' %}red{% elif category == 'success' %}green{% endif %};">
+            {{ message }}
+          </p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div style="max-width:500px; margin:auto; background:white; padding:2rem;

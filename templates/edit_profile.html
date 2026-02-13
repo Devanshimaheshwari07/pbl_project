@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<h2>Edit Your Profile</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <p style="color: {% if category == 'danger' %}red{% elif category == 'success' %}green{% else %}black{% endif %};">
+        {{ message }}
+      </p>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<form method="POST">
+    <label>Name:</label><br>
+    <input type="text" name="name" value="{{ user.name }}" required><br><br>
+
+    <label>Address:</label><br>
+    <input type="text" name="address" value="{{ user.address }}"><br><br>
+
+    <label>Age:</label><br>
+    <input type="number" name="age" value="{{ user.age }}"><br><br>
+
+    <label>Blood Group:</label><br>
+    <input type="text" name="blood_group" value="{{ user.blood_group }}"><br><br>
+
+    <label>Allergies:</label><br>
+    <input type="text" name="allergies" value="{{ medical_profile.allergies if medical_profile else '' }}"><br><br>
+
+    <label>Emergency Contact:</label><br>
+    <input type="text" name="emergency_contact" value="{{ medical_profile.emergency_contact if medical_profile else '' }}"><br><br>
+
+    <button type="submit">Update Profile</button>
+</form>
+
+<p><a href="{{ url_for('profile') }}">Back to Profile</a></p>
+{% endblock %}

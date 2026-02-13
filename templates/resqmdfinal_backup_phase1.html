@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ResQmed - Integrated Medical App</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<style>
+body { font-family: 'Roboto', sans-serif; margin: 0; background-color: #e6f0f8; color: #1a1a1a; }
+header { background: linear-gradient(to right, #0077b6, #00b4d8); color: white; text-align: center; padding: 2rem 1rem; }
+nav { background-color: #caf0f8; display: flex; justify-content: center; padding: 0.75rem; gap: 1.5rem; flex-wrap: wrap; }
+nav a, nav form button { color: #023e8a; text-decoration: none; font-weight: bold; background: none; border: none; cursor: pointer; font-size: 1rem; }
+nav a:hover, nav form button:hover { text-decoration: underline; }
+.content-section, .container { padding: 2rem; }
+.card { background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 2rem; }
+.button { background-color: #0077b6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 5px; cursor: pointer; }
+.button:hover { background-color: #0096c7; }
+.output { margin-top: 1rem; }
+.hidden { display: none; }
+#map { height: 400px; width: 100%; margin-top: 2rem; }
+.modal { background-color: rgba(0, 0, 0, 0.6); position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index:1000; }
+.modal:target { display: flex; }
+.form-box { background-color: white; padding: 2rem; border-radius: 10px; width: 300px; max-width:90%; position: relative; }
+.form-box input, .form-box select, .form-box textarea { display: block; width: 100%; padding: 0.5rem; margin: 0.5rem 0; }
+.form-box button { width: 100%; padding: 0.75rem; background-color: #0077b6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+.close-btn { position:absolute; top:10px; right:15px; text-decoration: none; font-size: 1.5rem; color: #333; }
+.switch-link { margin-top: 1rem; font-size:0.9rem; text-align:center; }
+ul { padding-left: 1rem; }
+.dashboard-card { display: flex; flex-direction: column; gap: 0.5rem; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+/* SOS button styles and glow animation */
+.sos-btn {
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  background: #c62828;
+  color: #fff;
+  transition: transform 0.12s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  opacity: 0.5;
+  cursor: not-allowed;
+  outline: none;
+}
+.sos-btn:focus { outline: 3px solid rgba(255,255,255,0.14); }
+.sos-active { opacity: 1; cursor: pointer; transform: translateY(-1px); }
+.sos-glow { animation: sos-pulse 1.6s infinite ease-in-out; }
+@keyframes sos-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(198,40,40,0.0); transform: scale(1); }
+  50% { box-shadow: 0 0 10px 6px rgba(198,40,40,0.12); transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 0 rgba(198,40,40,0.0); transform: scale(1); }
+}
+
+/* Password strength indicator */
+#password-strength { margin-top:6px; font-size:0.95rem; }
+
+/* Left-align SOS content */
+.sos-left { text-align: left; }
+.sos-left .sos-btn { margin-left: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ResQmed</h1>
+  <p>Your Trusted Emergency Medical Assistant</p>
+</header>
+
+<nav>
+  <a href="#home">Home</a>
+  <a href="#features">Features</a>
+  <a href="#dashboard">Dashboard</a>
+  <a href="#about">About</a>
+  <a href="#contact">Contact</a>
+  {% if 'user_email' in session %}
+    <a href="#profile-modal">Profile</a>
+    <form action="{{ url_for('logout') }}" method="POST" style="display:inline;">
+      <button type="submit">Logout</button>
+    </form>
+  {% else %}
+    <a href="#login-modal">Login</a>
+    <a href="#signup-modal">Sign Up</a>
+  {% endif %}
+</nav>
+
+<section id="home" class="content-section">
+  <h2>Welcome to ResQmed</h2>
+  <p>ResQmed is your all-in-one digital health companion. Book ambulances, find hospitals, donate blood, check medicines, and monitor your health dashboard.</p>
+</section>
+
+<section id="features" class="container">
+
+  <div class="card">
+    <h2>Emergency SOS</h2>
+    <p>Press the button below to alert emergency services.</p>
+    <div class="sos-left">
+      <button id="sos-btn" disabled class="sos-btn" aria-disabled="true">Emergency SOS</button>
+      <p id="sos-warning" style="color:red; font-weight:bold; margin-top:10px;"></p>
+      <div id="sos-output" class="output hidden" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Find Medical Facilities</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+      <button class="button" onclick="showFacilities('hospital')">Hospitals</button>
+      <button class="button" onclick="showFacilities('pharmacy')">Pharmacies</button>
+      <button class="button" onclick="showFacilities('clinic')">Clinics</button>
+      <button class="button" onclick="showFacilities('doctor')">Doctors</button>
+      <button class="button" onclick="showFacilities('blood_donation')">Blood Banks</button>
+    </div>
+    <ul id="facility-list" class="output hidden"></ul>
+  </div>
+
+  <div class="card">
+    <h2>Medicine Availability Checker</h2>
+    <input type="text" id="medicine-input" placeholder="Enter medicine name" />
+    <button class="button" onclick="searchMedicine()">Check Availability</button>
+    <div id="medicine-output" class="output hidden"></div>
+  </div>
+
+  <div class="card">
+    <h2>Book Ambulance</h2>
+    <button class="button" onclick="bookAmbulance()">Book Now</button>
+    <div id="ambulance-output" class="output hidden"></div>
+  </div>
+
+  <div class="card">
+    <h2>Blood Donation & Request</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between;">
+      <form method="POST" action="{{ url_for('blood_donation') }}" style="flex:1 1 300px; background:#f0f8ff; padding:1.5rem; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+        <h3 style="text-align:center; color:#0077b6; margin-bottom:1rem;">Register as Donor</h3>
+        <input type="hidden" name="form_type" value="donor">
+        <input type="text" name="name" placeholder="Full Name" required>
+        <input type="text" name="blood_group" placeholder="Blood Group" required>
+        <input type="text" name="contact" placeholder="Contact Number" required>
+        <input type="text" name="city" placeholder="City" required>
+        <button type="submit" class="button" style="margin-top:0.5rem;">Register</button>
+      </form>
+      <form method="POST" action="{{ url_for('blood_donation') }}" style="flex:1 1 300px; background:#fff0f0; padding:1.5rem; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+        <h3 style="text-align:center; color:#d00000; margin-bottom:1rem;">Request Blood</h3>
+        <input type="hidden" name="form_type" value="request">
+        <input type="text" name="requester_name" placeholder="Your Name" required>
+        <input type="text" name="blood_group" placeholder="Required Blood Group" required>
+        <input type="text" name="city" placeholder="City" required>
+        <textarea name="reason" placeholder="Reason (optional)"></textarea>
+        <button type="submit" class="button" style="background-color:#d00000; margin-top:0.5rem;">Submit Request</button>
+      </form>
+    </div>
+  </div>
+
+</section>
+
+<section id="dashboard" class="content-section">
+  <h2>Health Dashboard</h2>
+  {% if 'user_email' in session %}
+    <div class="dashboard-card">
+      <p><strong>Name:</strong> {{ user.name }}</p>
+      <p><strong>Age:</strong> {{ user.age or 'Not set' }}</p>
+      <p><strong>Blood Group:</strong> {{ user.blood_group or 'Not set' }}</p>
+      <p><strong>Last Ambulance Request:</strong> {{ last_ambulance.location if last_ambulance else 'No record' }}</p>
+      <p><strong>Total Registered Donors:</strong> {{ total_donors }}</p>
+    </div>
+  {% else %}
+    <p>Please login to view your personalized health dashboard.</p>
+  {% endif %}
+</section>
+
+<section id="about" class="content-section">
+  <h2>About ResQmed</h2>
+  <p>ResQmed simplifies healthcare by connecting patients with professionals and emergency services instantly.</p>
+</section>
+
+<section id="contact" class="content-section">
+  <h2>Contact Us</h2>
+  <p>Email: support@ResQmed.com<br>Phone: +91 98765 43210</p>
+</section>
+
+<div id="map"></div>
+
+<!-- LOGIN MODAL -->
+<div id="login-modal" class="modal">
+  <div class="form-box">
+    <a href="#" class="close-btn">&times;</a>
+    <h2 style="text-align:center;">Login</h2>
+    <form method="POST" action="{{ url_for('login') }}">
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+    <div class="switch-link">
+      Don't have an account? <a href="#signup-modal">Sign Up</a>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNUP MODAL -->
+<div id="signup-modal" class="modal">
+  <div class="form-box">
+    <a href="#" class="close-btn">&times;</a>
+    <h2 style="text-align:center;">Sign Up</h2>
+    <form method="POST" action="{{ url_for('signup') }}">
+      <input type="text" name="name" placeholder="Full Name" required>
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="password" id="signup-password" name="password" placeholder="Password" required>
+      <div id="password-strength" aria-live="polite" style="margin-top:6px;"></div>
+      <input type="text" name="address" placeholder="Address">
+      <input type="number" name="age" placeholder="Age">
+      <input type="text" name="blood_group" placeholder="Blood Group">
+      <button type="submit">Sign Up</button>
+    </form>
+    <div class="switch-link">
+      Already have an account? <a href="#login-modal">Login</a>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div id="profile-modal" class="modal">
+  <div class="form-box">
+    <a href="#" class="close-btn">&times;</a>
+    <h2 style="text-align:center;">Edit Profile</h2>
+    <form id="edit-profile-form" onsubmit="event.preventDefault(); submitProfile();">
+      <input type="text" name="name" id="profile-name" placeholder="Full Name" value="{{ user.name if user else '' }}" required>
+      <input type="number" name="age" id="profile-age" placeholder="Age" value="{{ user.age if user else '' }}">
+      <input type="text" name="blood_group" id="profile-blood" placeholder="Blood Group" value="{{ user.blood_group if user else '' }}">
+      <input type="text" name="address" id="profile-address" placeholder="Address" value="{{ user.address if user else '' }}">
+      <input type="text" name="allergies" id="profile-allergies" placeholder="Allergies" value="{{ user.medical_profile.allergies if user and user.medical_profile else '' }}">
+      <input type="text" name="emergency_contact" id="profile-emergency" placeholder="Emergency Contact" value="{{ user.medical_profile.emergency_contact if user and user.medical_profile else '' }}">
+      <button type="button" onclick="submitProfile()">Save</button>
+    </form>
+    <div id="profile-message" style="margin-top:10px; color:green;"></div>
+  </div>
+</div>
+
+<script>
+let map, markers = [];
+
+function initMap(lat, lon) {
+  map = L.map('map').setView([lat, lon], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  L.marker([lat, lon]).addTo(map).bindPopup("You are here").openPopup();
+}
+
+function clearAllMarkers() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+}
+
+function showFacilities(type) {
+  const output = document.getElementById('facility-list'); output.innerHTML = `Loading nearby ${type}s...`; output.classList.remove('hidden');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+    if (!map) initMap(lat, lon); clearAllMarkers();
+    const query = `[out:json];node["amenity"="${type}"](around:3000,${lat},${lon});out;`;
+    fetch("https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query))
+      .then(res => res.json()).then(data => {
+        output.innerHTML = "";
+        if (!data.elements || !data.elements.length) { output.innerHTML = `No nearby ${type}s found.`; return; }
+        const icon = new L.Icon({ iconUrl: getIconURL(type), iconSize:[28,28], iconAnchor:[14,28] });
+        data.elements.forEach(facility => {
+          const name = facility.tags && facility.tags.name ? facility.tags.name : "Unnamed";
+          output.innerHTML += `<li>${name}</li>`;
+          const marker = L.marker([facility.lat, facility.lon], {icon}).addTo(map).bindPopup(name);
+          markers.push(marker);
+        });
+      }).catch(()=>{ output.innerHTML = `No nearby ${type}s found.`; });
+  }, ()=>{ alert('Geolocation permission denied or unavailable.'); });
+}
+
+function getIconURL(type) {
+  switch(type){
+    case 'hospital': return 'https://cdn-icons-png.flaticon.com/512/2965/2965567.png';
+    case 'pharmacy': return 'https://cdn-icons-png.flaticon.com/512/2331/2331970.png';
+    case 'clinic': return 'https://cdn-icons-png.flaticon.com/512/3103/3103446.png';
+    case 'doctor': return 'https://cdn-icons-png.flaticon.com/512/3621/3621431.png';
+    case 'blood_donation': return 'https://cdn-icons-png.flaticon.com/512/3062/3062634.png';
+    default: return 'https://cdn-icons-png.flaticon.com/512/167/167707.png';
+  }
+}
+
+function searchMedicine() {
+  const medicine = document.getElementById('medicine-input').value.trim();
+  if (!medicine) return alert("Please enter a medicine name.");
+  fetch('/medicine_search', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ medicine }) })
+    .then(res => res.json()).then(data => {
+      const output = document.getElementById('medicine-output'); output.classList.remove('hidden');
+      if (data.error) output.textContent = data.error; else output.innerHTML = data.map(d => `<li>${d.pharmacy} has ${d.medicine}</li>`).join('');
+    }).catch(()=>{ alert('Error checking medicine.'); });
+}
+
+function bookAmbulance() {
+  if (!navigator.geolocation) { alert("Geolocation not supported."); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    fetch('/book_ambulance', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({latitude:pos.coords.latitude, longitude:pos.coords.longitude}) })
+      .then(res => res.json()).then(data => {
+        const output = document.getElementById('ambulance-output'); output.classList.remove('hidden');
+        output.textContent = data.error ? data.error + " Please login or register." : `${data.message} ETA: ${data.eta}. Assigned: ${data.ambulance}`;
+      }).catch(()=>{ alert('Error booking ambulance.'); });
+  }, ()=>{ alert('Geolocation permission denied or unavailable.');});
+}
+
+/* Password strength validator (signup) */
+const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+function validatePasswordStrength(password) {
+  const indicator = document.getElementById('password-strength');
+  if (!indicator) return;
+  if (password && password.match(PASSWORD_PATTERN)) {
+    indicator.textContent = 'Password is strong.';
+    indicator.style.color = 'green';
+  } else {
+    indicator.textContent = 'Password is weak. It should include at least one uppercase letter, one lowercase letter, one number, and one special character.';
+    indicator.style.color = 'red';
+  }
+}
+document.addEventListener('DOMContentLoaded', function(){
+  const signupPwd = document.getElementById('signup-password');
+  if (signupPwd) {
+    validatePasswordStrength(signupPwd.value || '');
+    signupPwd.addEventListener('input', (e)=> validatePasswordStrength(e.target.value));
+  }
+});
+
+/* Profile submission -> calls /edit_profile and then re-checks SOS availability */
+function submitProfile() {
+  const payload = {
+    name: document.getElementById('profile-name').value,
+    age: document.getElementById('profile-age').value,
+    blood_group: document.getElementById('profile-blood').value,
+    address: document.getElementById('profile-address').value,
+    allergies: document.getElementById('profile-allergies').value,
+    emergency_contact: document.getElementById('profile-emergency').value
+  };
+  fetch('/edit_profile', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)})
+  .then(res => res.json()).then(data => {
+    document.getElementById('profile-message').textContent = data.message || 'Profile saved';
+    checkProfileAndToggleSOS();
+  }).catch(()=>{ document.getElementById('profile-message').textContent = 'Error saving profile'; });
+}
+
+/* Check profile and toggle SOS button (enable + glow when profile exists) */
+async function checkProfileAndToggleSOS() {
+  const btn = document.getElementById('sos-btn');
+  const warning = document.getElementById('sos-warning');
+  try {
+    const resp = await fetch('/api/check_profile', { credentials: 'same-origin' });
+    const data = await resp.json().catch(()=>({profile_exists:false}));
+    if (data.profile_exists) {
+      btn.disabled = false;
+      btn.setAttribute('aria-disabled','false');
+      btn.classList.add('sos-active','sos-glow');
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      warning.textContent = '';
+    } else {
+      btn.disabled = true;
+      btn.setAttribute('aria-disabled','true');
+      btn.classList.remove('sos-active','sos-glow');
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'not-allowed';
+      warning.textContent = 'Please complete your medical profile to activate SOS.';
+    }
+  } catch (err) {
+    btn.disabled = true;
+    btn.setAttribute('aria-disabled','true');
+    btn.classList.remove('sos-active','sos-glow');
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+    warning.textContent = 'Unable to verify profile; SOS disabled.';
+  }
+}
+
+/* Get geolocation with timeout */
+function getLocation(timeout = 5000) {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(null);
+    let done = false;
+    const timer = setTimeout(()=>{ if (!done) { done = true; resolve(null); } }, timeout);
+    navigator.geolocation.getCurrentPosition(pos => {
+      if (done) return;
+      done = true; clearTimeout(timer);
+      resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+    }, ()=>{ if (done) return; done = true; clearTimeout(timer); resolve(null); }, { timeout });
+  });
+}
+
+/* SOS handler: checks profile again, sends /api/sos, shows message only on actual send */
+document.addEventListener('DOMContentLoaded', function(){
+  checkProfileAndToggleSOS();
+
+  const sosBtn = document.getElementById('sos-btn');
+  if (sosBtn) {
+    sosBtn.addEventListener('click', async function(){
+      const btn = this;
+      btn.disabled = true;
+      try {
+        const checkResp = await fetch('/api/check_profile', { credentials: 'same-origin' });
+        const checkJson = await checkResp.json().catch(()=>({profile_exists:false}));
+        if (!checkJson.profile_exists) {
+          alert('Please create your medical profile before using Emergency SOS.');
+          btn.disabled = false;
+          return;
+        }
+        const loc = await getLocation(5000);
+        const payload = loc ? { latitude: loc.latitude, longitude: loc.longitude } : {};
+        const sosResp = await fetch('/api/sos', { method:'POST', headers:{'Content-Type':'application/json'}, credentials: 'same-origin', body:JSON.stringify(payload) });
+        const sosJson = await sosResp.json().catch(()=>({}));
+        if (sosResp.ok && sosJson.status === 'sent') {
+          document.getElementById('sos-output').classList.remove('hidden');
+          document.getElementById('sos-output').textContent = 'SOS Alert Sent! Location shared.';
+        } else if (sosJson.status === 'no_emergency_contact') {
+          alert('Ambulance request logged but no emergency contact configured. Please update your medical profile.');
+        } else {
+          alert('SOS could not be sent. Please try again.');
+        }
+      } catch (err) {
+        alert('Network error sending SOS: ' + (err && err.message ? err.message : String(err)));
+      } finally {
+        setTimeout(()=>{ btn.disabled = false; }, 3000);
+      }
+    });
+  }
+});
+
+/* Initialize map on load if geolocation available */
+window.onload = () => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => initMap(pos.coords.latitude, pos.coords.longitude), ()=>{});
+  }
+};
+</script>
+</body>
+</html>

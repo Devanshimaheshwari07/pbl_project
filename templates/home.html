@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<section id="home" class="content-section">
+    <h2>Welcome to ResQmed</h2>
+    <p>ResQmed is your all-in-one digital health companion. Book appointments, access medical records, consult with doctors, and manage emergencies seamlessly.</p>
+</section>
+
+<section id="features" class="container">
+    <div class="card">
+        <h2>Emergency SOS</h2>
+
+        {% if user %}
+            {% if profile_exists %}
+                <p>Press the button below to immediately alert emergency services and share your location.</p>
+                <button class="button sos-button" onclick="sendSOS()">Send SOS</button>
+                <div id="sos-output" class="output hidden"></div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <strong>Emergency SOS</strong>
+                    <p>Please complete your medical profile to activate SOS.</p>
+                    <a href="{{ url_for('edit_profile') }}" class="button">Complete Profile</a>
+                </div>
+            {% endif %}
+        {% else %}
+            <p>Please <a href="{{ url_for('login') }}">login</a> to use Emergency SOS.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Nearby Hospitals</h2>
+        <p>See a list of nearby hospitals with emergency care availability.</p>
+        <button class="button" onclick="showHospitals()">View Hospitals</button>
+        <ul id="hospital-list" class="output hidden"></ul>
+    </div>
+
+    <div class="card">
+        <h2>Book Ambulance</h2>
+        <p>Request an ambulance to your current location instantly.</p>
+        {% if user %}
+            <button class="button" onclick="bookAmbulance()">Book Now</button>
+            <div id="ambulance-output" class="output hidden"></div>
+        {% else %}
+            <p>Please <a href="{{ url_for('login') }}">login</a> to book an ambulance.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>My Medical Profile</h2>
+        <p>Access your stored medical history, allergies, and emergency contacts.</p>
+        {% if user %}
+            <button class="button" onclick="viewProfile()">View Profile</button>
+            <div id="profile-output" class="output hidden"></div>
+        {% else %}
+            <p>Please <a href="{{ url_for('login') }}">login</a> to view your profile.</p>
+        {% endif %}
+    </div>
+</section>
+
+<section id="about" class="content-section">
+    <h2>About ResQmed</h2>
+    <p>ResQmed is designed to simplify healthcare access for everyone. Our platform connects patients with certified professionals and streamlines health services for a better tomorrow.</p>
+</section>
+
+<section id="contact" class="content-section">
+    <h2>Contact Us</h2>
+    <p>Email: support@ResQmed.com<br>Phone: +91 98765 43210</p>
+</section>
+
+<div id="map" style="height: 400px; width: 100%; margin-top: 20px;"></div>
+
+<script>
+function sendSOS() {
+    const output = document.getElementById('sos-output');
+    output.textContent = "SOS Alert Sent! Your location has been shared with emergency services.";
+    output.classList.remove('hidden');
+}
+
+function showHospitals() {
+    const hospitalList = document.getElementById('hospital-list');
+    hospitalList.innerHTML = `
+        <li>City Hospital - 2.5 km away</li>
+        <li>Green Life Clinic - 3.2 km away</li>
+        <li>Emergency Medical Center - 5.1 km away</li>`;
+    hospitalList.classList.remove('hidden');
+}
+
+function bookAmbulance() {
+    const output = document.getElementById('ambulance-output');
+    output.textContent = "Ambulance Booked! ETA: 7 minutes.";
+    output.classList.remove('hidden');
+}
+
+function viewProfile() {
+    const output = document.getElementById('profile-output');
+    output.innerHTML = `
+        <strong>Name:</strong> {{ user.name }}<br>
+        <strong>Blood Group:</strong> {{ user.blood_group }}<br>
+        <strong>Age:</strong> {{ user.age }}<br>
+        <strong>Address:</strong> {{ user.address or 'Not Set' }}<br>
+        <strong>Allergies:</strong> {{ medical_profile.allergies if medical_profile else 'Not Set' }}<br>
+        <strong>Emergency Contact:</strong> {{ medical_profile.emergency_contact if medical_profile else 'Not Set' }}`;
+    output.classList.remove('hidden');
+}
+</script>
+{% endblock %}

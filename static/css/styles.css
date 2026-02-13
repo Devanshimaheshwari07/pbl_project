@@ -1,0 +1,440 @@
+:root {
+  --primary-color: #0077b6;
+  --primary-dark: #023e8a;
+  --secondary-color: #00b4d8;
+  --accent-color: #caf0f8;
+  --background-color: #f8fafc;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --white: #ffffff;
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --glass: rgba(255, 255, 255, 0.95);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --radius: 12px;
+  --font-main: 'Inter', 'Roboto', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Modals */
+.modal {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  /* Changed from flex/opacity to none */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal:target,
+.modal.active {
+  display: flex;
+  /* Show only when active */
+  animation: fadeIn 0.3s forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Navbar */
+.navbar {
+  background-color: var(--glass);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+  padding: 1rem 0;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand-logo {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+
+.brand-logo span {
+  color: var(--secondary-color);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.nav-links a {
+  color: var(--text-primary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: var(--primary-color);
+}
+
+.btn-signup {
+  background-color: var(--primary-color);
+  color: white !important;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-signup:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-logout {
+  background: none;
+  border: 1px solid var(--text-secondary);
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  padding: 6rem 1rem 8rem 1rem;
+  text-align: center;
+  clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
+}
+
+.hero-content h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  color: var(--primary-dark);
+  line-height: 1.1;
+}
+
+.hero-content p {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto 2rem auto;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.large-btn {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Cards & Grid */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #f1f5f9;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Buttons */
+.button {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button:hover {
+  background: var(--primary-dark);
+  opacity: 0.9;
+}
+
+.button.danger {
+  background: var(--danger);
+}
+
+.button.secondary {
+  background: var(--secondary-color);
+}
+
+/* Inputs */
+/* Inputs */
+input:not([type="checkbox"]),
+select,
+textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-family: inherit;
+}
+
+input[type="checkbox"] {
+  width: auto;
+  margin-right: 10px;
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+input:focus {
+  outline: 2px solid var(--primary-color);
+  border-color: transparent;
+}
+
+/* SOS Button Pulse */
+.sos-btn {
+  background: var(--danger);
+  color: white;
+  border: none;
+  padding: 1.5rem 3rem;
+  font-size: 1.5rem;
+  border-radius: 9999px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  transition: all 0.3s;
+}
+
+.sos-active {
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Map Layout with Sidebar */
+.map-wrapper {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 2rem;
+  height: 600px;
+  margin-bottom: 3rem;
+}
+
+@media (max-width: 768px) {
+  .map-wrapper {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  #map {
+    height: 400px;
+  }
+}
+
+.ranking-sidebar {
+  background: white;
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  overflow-y: auto;
+  max-height: 600px;
+}
+
+.hospital-rank-card {
+  border-bottom: 1px solid #f1f5f9;
+  padding: 1rem 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.hospital-rank-card:hover {
+  background: #f8fafc;
+}
+
+.rank-badge {
+  background: var(--warning);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+#map {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  height: 100%;
+  min-height: 400px;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  border-left: 4px solid var(--primary-color);
+  animation: slideIn 0.3s forwards;
+  z-index: 2000;
+}
+
+.toast.success {
+  border-color: var(--success);
+}
+
+.toast.error {
+  border-color: var(--danger);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Utility */
+.hidden {
+  display: none;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-2 {
+  margin-top: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 1rem;
+}
+
+/* Triage Badges */
+.triage-critical {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 2px solid #ef4444;
+}
+
+.triage-urgent {
+  background-color: #ffedd5;
+  color: #c2410c;
+  border: 2px solid #f97316;
+}
+
+.triage-non-urgent {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 2px solid #22c55e;
+}
+
+/* Pulse Animation for Critical */
+.pulse-critical {
+  animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* AI Recommendation Card */
+#rec-hospital-card {
+  transition: all 0.3s ease-out;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+#rec-hospital-card.show {
+  opacity: 1;
+  transform: translateY(0);
+}

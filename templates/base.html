@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ResQmed - Medical Emergency App{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Modern Header/Nav -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{{ url_for('home') }}" class="brand-logo" style="display: flex; align-items: center; gap: 10px;">
+                <img src="{{ url_for('static', filename='images/logo_v4.svg') }}" alt="ResQmed Logo" style="height: 45px; width: auto;">
+                <span style="font-weight: bold; font-size: 1.5rem; letter-spacing: -0.5px;">
+                    <span style="color: var(--secondary-color);">ResQ</span><span style="color: var(--primary-dark);">med</span>
+                </span>
+            </a>
+            <div class="nav-links">
+                <a href="{{ url_for('home') }}#home">Home</a>
+                <a href="{{ url_for('home') }}#features">Features</a>
+                <a href="{{ url_for('home') }}#dashboard">Dashboard</a>
+                {% if 'user_email' in session %}
+                    <a href="#profile-modal">Profile</a>
+                    <form action="{{ url_for('logout') }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn-logout">Logout</button>
+                    </form>
+                {% else %}
+                    <a href="#login-modal">Login</a>
+                    <a href="#signup-modal" class="btn-signup">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section Placeholder (to be filled by index.html or specific page hero) -->
+    <!-- Removed common header to allow custom hero on index -->
+
+    <!-- Flash Messages (rendered as Toasts via JS usually, but here plain HTML fallback or JS init) -->
+    <!-- We will let Flask flash messages be picked up by Jinja and render a script to show them as toasts -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    {% for category, message in messages %}
+                        // Map flask categories to toast types
+                        // success->success, danger->error, info->info
+                        const type = "{{ 'error' if category == 'danger' else category }}";
+                        if (typeof Toast !== 'undefined') {
+                            Toast.show("{{ message }}", type);
+                        }
+                    {% endfor %}
+                });
+            </script>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Modals -->
+    {% block modals %}
+        <!-- Login Modal -->
+        <div id="login-modal" class="modal">
+            <div class="modal-content">
+                <a href="#" class="close-btn">&times;</a>
+                <h2 class="text-center">Login</h2>
+                <form method="POST" action="{{ url_for('login') }}">
+                    <input type="email" name="email" placeholder="Email Address" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit" class="button mt-2" style="width:100%">Login</button>
+                </form>
+                <div class="text-center mt-2">
+                    <small>Don't have an account? <a href="#signup-modal">Sign Up</a></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signup Modal -->
+        <div id="signup-modal" class="modal">
+            <div class="modal-content">
+                <a href="#" class="close-btn">&times;</a>
+                <h2 class="text-center">Sign Up</h2>
+                <form method="POST" action="{{ url_for('signup') }}">
+                    <input type="text" name="name" placeholder="Full Name" required>
+                    <input type="email" name="email" placeholder="Email Address" required>
+                    <input type="password" id="signup-password" name="password" placeholder="Create Password" required>
+                    <div id="password-strength" style="font-size:0.8rem;"></div>
+                    
+                    <div class="grid" style="gap:10px; grid-template-columns: 1fr 1fr;">
+                         <input type="text" name="address" placeholder="City/Address">
+                         <input type="number" name="age" placeholder="Age">
+                    </div>
+                    <select name="blood_group">
+                        <option value="">Select Blood Group</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                    </select>
+
+                    <button type="submit" class="button mt-2" style="width:100%">Create Account</button>
+                </form>
+                <div class="text-center mt-2">
+                    <small>Already registered? <a href="#login-modal">Login</a></small>
+                </div>
+            </div>
+        </div>
+
+         <!-- Profile Modal -->
+        {% if user %}
+        <div id="edit-profile-modal" class="modal">
+            <div class="card" style="width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>Edit Profile & Medical Details</h3>
+                    <button onclick="document.getElementById('edit-profile-modal').style.display='none'" class="button secondary" style="padding: 0.5rem;">✕</button>
+                </div>
+                
+                <form id="edit-profile-form" onsubmit="event.preventDefault(); submitProfile();" enctype="multipart/form-data">
+                    
+                    <h4 style="border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 0;">Personal Info</h4>
+                    <div class="grid" style="gap: 1rem; grid-template-columns: 1fr 1fr;">
+                        <div>
+                            <label>Profile Picture</label>
+                            <input type="file" name="profile_pic" accept="image/*">
+                        </div>
+                        <div>
+                            <label>Full Name</label>
+                            <input type="text" name="name" value="{{ user.name if user else '' }}" required>
+                        </div>
+                        <div>
+                            <label>Phone Number</label>
+                            <input type="tel" name="phone" value="{{ user.phone if user else '' }}" placeholder="+91...">
+                        </div>
+                        <div>
+                            <label>Age</label>
+                            <input type="number" id="profile-age" name="age" value="{{ user.age if user else '' }}" required>
+                        </div>
+                        <div>
+                            <label>Gender</label>
+                            <select name="gender">
+                                <option value="">Select Gender</option>
+                                <option value="Male" {% if user and user.gender == 'Male' %}selected{% endif %}>Male</option>
+                                <option value="Female" {% if user and user.gender == 'Female' %}selected{% endif %}>Female</option>
+                                <option value="Other" {% if user and user.gender == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Blood Group</label>
+                            <select name="blood_group">
+                                <option value="">Select Group</option>
+                                <option value="A+" {% if user and user.blood_group == 'A+' %}selected{% endif %}>A+</option>
+                                <option value="A-" {% if user and user.blood_group == 'A-' %}selected{% endif %}>A-</option>
+                                <option value="B+" {% if user and user.blood_group == 'B+' %}selected{% endif %}>B+</option>
+                                <option value="B-" {% if user and user.blood_group == 'B-' %}selected{% endif %}>B-</option>
+                                <option value="O+" {% if user and user.blood_group == 'O+' %}selected{% endif %}>O+</option>
+                                <option value="O-" {% if user and user.blood_group == 'O-' %}selected{% endif %}>O-</option>
+                                <option value="AB+" {% if user and user.blood_group == 'AB+' %}selected{% endif %}>AB+</option>
+                                <option value="AB-" {% if user and user.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                         <label>Address</label>
+                         <textarea name="address" rows="2">{{ user.address if user else '' }}</textarea>
+                    </div>
+
+                    <h4 style="border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 1rem;">Medical History (Critical for SOS)</h4>
+                    
+                    <label>Emergency Contact Number</label>
+                    <input type="tel" name="emergency_contact" value="{{ (user.medical_profile and user.medical_profile.emergency_contact) or '' }}" placeholder="Who to call in emergency?" required>
+
+                    <div class="grid" style="gap: 1rem; grid-template-columns: 1fr 1fr;">
+                        <div>
+                            <label>Allergies</label>
+                            <textarea name="allergies" rows="2" placeholder="e.g. Peanuts, Penicillin">{{ (user.medical_profile and user.medical_profile.allergies) or '' }}</textarea>
+                        </div>
+                        <div>
+                            <label>Current Medications</label>
+                            <textarea name="medications" rows="2" placeholder="e.g. Insulin, Aspirin">{{ (user.medical_profile and user.medical_profile.medications) or '' }}</textarea>
+                        </div>
+                        <div>
+                            <label>Chronic Conditions</label>
+                            <textarea name="chronic_conditions" rows="2" placeholder="e.g. Diabetes, Asthma">{{ (user.medical_profile and user.medical_profile.chronic_conditions) or '' }}</textarea>
+                        </div>
+                        <div>
+                            <label>Past Surgeries</label>
+                            <textarea name="surgeries" rows="2" placeholder="e.g. Appendectomy (2020)">{{ (user.medical_profile and user.medical_profile.surgeries) or '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right; margin-top: 1rem;">
+                        <button type="button" onclick="document.getElementById('edit-profile-modal').style.display='none'" class="button secondary">Cancel</button>
+                        <button type="submit" class="button">Save Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+    {% endblock %}
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
