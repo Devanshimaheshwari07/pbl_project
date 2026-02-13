@@ -1,2 +1,3 @@
 PBL Project
+
 ResQmed is an emergency response web application in real time and location based which is created to assist users to have quick access to local hospitals and pharmacies in case of critical situations. The site supports interactivity in its maps, user authentication and filtering mechanisms to make it more accessible and responsive to users. The goal of the project is to enhance the connectivity of emergency healthcare using solutions that are technologically based.
