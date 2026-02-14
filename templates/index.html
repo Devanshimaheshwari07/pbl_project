@@ -46,6 +46,8 @@
                 <button class="button" onclick="showFacilities('blood_donation')">Blood Banks</button>
             </div>
             <ul id="facility-list" class="mt-2" style="text-align: left; max-height: 200px; overflow-y: auto;"></ul>
+            <!-- Inline Map -->
+            <div id="map" class="mt-2" style="display: none;"></div>
         </div>
 
         <!-- Medicine Search -->
@@ -279,7 +281,7 @@
                     <p><strong>Blood Group:</strong> <span style="color: var(--danger); font-weight: bold;">{{ user.blood_group or 'Not set' }}</span></p>
                 </div>
                 <div>
-                     <p><strong>Emergency Contact:</strong> {{ user.medical_profile.emergency_contact if user.medical_profile.emergency_contact else 'Not Configured' }}</p>
+                     <p><strong>Emergency Contact:</strong> {{ medical_profile.emergency_contact if medical_profile and medical_profile.emergency_contact else 'Not Configured' }}</p>
                      <p><strong>Last Activity:</strong> {{ last_ambulance.location if last_ambulance else 'No ambulance requests' }}</p>
                 </div>
             </div>
@@ -295,10 +297,7 @@
     {% endif %}
 </section>
 
-<!-- Map Container -->
-<div class="container">
-    <div id="map"></div>
-</div>
+
 
 
 

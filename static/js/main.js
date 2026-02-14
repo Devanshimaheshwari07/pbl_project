@@ -30,6 +30,7 @@ const Toast = {
 /* --- Global State --- */
 let map = null;
 let markers = [];
+let cachedPosition = null;
 
 /* --- Rankings Data --- */
 // Hardcoded data for key hospitals (simulating "Real Data" source)
@@ -95,21 +96,19 @@ function getStarString(rating) {
 
 /* --- Map Functions --- */
 function initMap(lat, lon) {
-    if (map) return;
+    const mapEl = document.getElementById('map');
+
+    // Show the map container (it starts hidden)
+    mapEl.style.display = 'block';
+
+    if (map) {
+        // Map already initialized, just recenter
+        map.setView([lat, lon], 13);
+        map.invalidateSize();
+        return;
+    }
 
     if (typeof L === 'undefined') return;
-
-    // Create map container structure if not exists (for sidebar)
-    const mapContainer = document.getElementById('map').parentElement;
-    if (!mapContainer.classList.contains('map-wrapper')) {
-        mapContainer.classList.add('map-wrapper');
-        // Create Sidebar
-        const sidebar = document.createElement('div');
-        sidebar.id = 'ranking-sidebar';
-        sidebar.className = 'ranking-sidebar hidden';
-        sidebar.innerHTML = `<h3>Top Rated Nearby</h3><div id="ranking-list">Loading...</div>`;
-        mapContainer.insertBefore(sidebar, document.getElementById('map'));
-    }
 
     map = L.map('map').setView([lat, lon], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -118,6 +117,9 @@ function initMap(lat, lon) {
 
     L.marker([lat, lon]).addTo(map)
         .bindPopup("<b>You are here</b>").openPopup();
+
+    // Fix Leaflet rendering in initially hidden containers
+    setTimeout(() => map.invalidateSize(), 200);
 }
 
 function updateLeaderboard(facilities) {
@@ -193,15 +195,8 @@ function showFacilities(type) {
                         const stats = generateStats(f.id, name);
                         facilityData = stats;
                         popupContent += `
-                            <div style="margin-top:8px; font-size:0.9rem; line-height:1.4;">
-                                <div style="border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:4px;">
-                                    <strong>Overall Rating: ${stats.overall}</strong> ${getStarString(stats.overall)}
-                                </div>
-                                <div>💀 Mortality: <b>${stats.stats.mortality}</b></div>
-                                <div>🛡️ Safety: <b>${stats.stats.safety}</b></div>
-                                <div>🔄 Readmission: <b>${stats.stats.readmission}</b></div>
-                                <div>😃 Experience: <b>${stats.stats.experience}</b></div>
-                                <div>⏱️ Timely Care: <b>${stats.stats.timely}</b></div>
+                            <div style="margin-top:8px; font-size:0.9rem;">
+                                <strong>Rating: ${stats.overall}</strong> ${getStarString(stats.overall)}
                             </div>
                         `;
                     }
@@ -299,20 +294,75 @@ function bookAmbulance() {
 }
 
 /* --- Utilities --- */
-function getLocation(timeout = 5000) {
+function getIconURL(type) {
+    const icons = {
+        hospital: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+        pharmacy: 'https://cdn-icons-png.flaticon.com/512/2913/2913461.png',
+        clinic: 'https://cdn-icons-png.flaticon.com/512/4320/4320350.png',
+        blood_donation: 'https://cdn-icons-png.flaticon.com/512/3515/3515338.png'
+    };
+    return icons[type] || icons.hospital;
+}
+
+function clearAllMarkers() {
+    markers.forEach(m => {
+        if (map) map.removeLayer(m);
+    });
+    markers = [];
+}
+
+function submitProfile() {
+    const form = document.getElementById('edit-profile-form');
+    if (!form) return;
+
+    const formData = new FormData(form);
+
+    fetch('/edit_profile', {
+        method: 'POST',
+        body: formData
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                Toast.show(data.error, 'error');
+            } else {
+                Toast.show(data.message || 'Profile updated!', 'success');
+                document.getElementById('edit-profile-modal').style.display = 'none';
+                // Reload to reflect changes
+                setTimeout(() => location.reload(), 500);
+            }
+        })
+        .catch(() => Toast.show('Failed to update profile', 'error'));
+}
+
+function getLocation(timeout = 15000) {
+    // Return cached position if available (avoids repeated prompts/timeouts)
+    if (cachedPosition) return Promise.resolve(cachedPosition);
+
     return new Promise(resolve => {
         if (!navigator.geolocation) return resolve(null);
 
-        const options = { timeout, enableHighAccuracy: true };
-
-        navigator.geolocation.getCurrentPosition(
-            pos => resolve(pos.coords),
-            err => {
-                console.warn("Geolocation error:", err);
-                resolve(null);
-            },
-            options
-        );
+        // Try high accuracy first, fall back to low accuracy
+        const tryGet = (highAccuracy) => {
+            const options = { timeout, enableHighAccuracy: highAccuracy, maximumAge: 60000 };
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    cachedPosition = pos.coords;
+                    resolve(pos.coords);
+                },
+                err => {
+                    console.warn(`Geolocation error (highAccuracy=${highAccuracy}):`, err);
+                    if (highAccuracy) {
+                        // Retry with low accuracy
+                        tryGet(false);
+                    } else {
+                        resolve(null);
+                    }
+                },
+                options
+            );
+        };
+        tryGet(true);
     });
 }
 
@@ -382,7 +432,7 @@ async function handleSOS() {
         const payload = loc ? { latitude: loc.latitude, longitude: loc.longitude } : {};
 
         // 1. Send Alert to Contacts (Backend)
-        const res = await fetch('/api/sos', {
+        const res = await fetch('/sos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -504,7 +554,7 @@ function getSimulatedHospitalData(id, name) {
     const specs = [];
     const numSpecs = (Math.abs(hash) % 2) + 2;
     for (let i = 0; i < numSpecs; i++) {
-        specs.push(HOSPITALS_SPECIALTIES[(Math.abs(hash + i) % HOSPITAL_SPECIALTIES.length)]);
+        specs.push(HOSPITAL_SPECIALTIES[(Math.abs(hash + i) % HOSPITAL_SPECIALTIES.length)]);
     }
     // Ensure "General" is always there for fallback
     if (!specs.includes('General')) specs.push('General');

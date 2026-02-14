@@ -34,6 +34,8 @@ class User(db.Model):
     gender = db.Column(db.String(20))
     phone = db.Column(db.String(20))
     profile_pic = db.Column(db.String(200)) # Path to file
+    medical_profile = db.relationship('MedicalProfile', backref='user', uselist=False,
+                                       primaryjoin="User.email == foreign(MedicalProfile.user_email)")
 
 class AmbulanceRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
